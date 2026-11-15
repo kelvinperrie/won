@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WON: War On Nature</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="battlefield"></canvas>
+
+  <div id="hud">
+    <div class="hud-title">WON <span>War On Nature</span></div>
+    <div class="hud-row">Amount of Nature Destroyed: <b id="destroyed">0</b></div>
+    <div class="hud-row">Points: <b id="points">0</b></div>
+    <div class="hud-hint">WASD move &middot; click to shoot</div>
+  </div>
+
+  <div id="toasts" aria-live="polite"></div>
+
+  <aside id="shop" aria-label="Shop">
+    <header class="panel-tabs" role="tablist">
+      <button type="button" class="panel-tab active" data-tab="shop" role="tab">SHOP</button>
+      <button type="button" class="panel-tab" data-tab="achievements" role="tab">ACHIEVEMENTS</button>
+    </header>
+    <div class="shop-body tab-panel" data-panel="achievements" hidden>
+      <div id="achievement-count" class="unit-sub"></div>
+      <div id="achievement-list"></div>
+    </div>
+    <div class="shop-body tab-panel" data-panel="shop">
+      <section>
+        <h2>UNITS</h2>
+        <div id="unit-tabs" class="unit-tabs"></div>
+        <div id="unit-detail"></div>
+        <div id="unit-buy" class="unit-buy"></div>
+      </section>
+      <section>
+        <h2>LURES</h2>
+        <div id="lures"></div>
+      </section>
+    </div>
+    <footer class="shop-footer">
+      <button id="reset" type="button" class="danger">Reset Progress</button>
+    </footer>
+  </aside>
+
+  <script src="js/config.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/advisers.js"></script>
+  <script src="js/toasts.js"></script>
+  <script src="js/achievements.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
