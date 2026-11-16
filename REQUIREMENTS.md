@@ -19,7 +19,7 @@ The joke: nature is awesome, but people tend to treat it as an adversary. The to
 - **Everything is text.** No images or sprites. Each entity is drawn as the word for what it is.
   - The player's man is drawn as `MAN1`.
   - A rabbit is drawn as `rabbit`, a pig as `pig`, and so on. Each animal can have its own text size; rabbits are drawn smaller than the others because they're small animals.
-  - Each animal has its own colour: **rabbits green, pigs pink, deer brown, moose grey-brown, bears white, ferrets golden.** The same colour is used for the animal's name in the shop's lure list.
+  - Each animal has its own colour: **rabbits green, pigs pink, deer brown, moose grey-brown, bears white, ferrets golden, geese pale blue-grey, crabs bright red, moles earthy terracotta.** The same colour is used for the animal's name in the shop's lure list.
   - The tank is drawn as `TANK1` with the word `BARREL` on top of it, and fires `SHELL`s (see 5.5).
   - Trees are drawn as `TREE` and bushes as `BUSH` (see 6.5).
   - Letters in unit, animal and plant words are squished slightly closer together than normal.
@@ -122,7 +122,7 @@ All attributes can be upgraded by spending points, **up to a maximum level of 8 
 |------------------|---------|-----------------|---------------|
 | Speed            | 5% of screen/s | 0.75 | 9.5% of screen/s |
 | Shooting speed   | 0.35 shots/s | 0.08 | 0.83 shots/s |
-| Range            | 45% of screen | 3 | 63% of screen |
+| Range            | 38% of screen | 1.67 (10% over 6 levels) | 48% of screen |
 | Damage           | 6 | 3 | 24 |
 | Power            | 6% radius | 1.5 | 15% radius |
 
@@ -131,12 +131,13 @@ All attributes can be upgraded by spending points, **up to a maximum level of 8 
 - It works **exactly like the TANK** (the same `BARREL` that turns independently at 140° per second, fires `SHELL`s once lined up, same slight aim error), **except it can't move at all**.
 - It appears in the **centre of the battlefield** and stays there. Its body never turns: the `ARTILLERY1` word lies flat and reads left to right, with its letters squished together more tightly than other unit labels. Only the barrel turns.
 - Because it can't chase, it only targets animals **within its range**: it keeps firing at its current target while that target is in range, and otherwise switches to the closest animal in range. With nothing in range it waits.
+- It has a **minimum range of 20%** of the screen's shorter side: it never targets or fires at anything closer than that, so animals right next to it are safe from it.
 - It has **no Speed attribute**. Its other four attributes have a **maximum level of 6**, like the TANK:
 
 | `ARTILLERY` attribute | Level 0 | Each level adds | Level 6 (max) |
 |-----------------------|---------|-----------------|---------------|
 | Shooting speed        | 0.35 shots/s | 0.08 | 0.83 shots/s |
-| Range                 | 55% of screen | 4 | 79% of screen |
+| Range                 | 40% of screen | 1.67 (10% over 6 levels) | 50% of screen |
 | Damage                | 6 | 3 | 24 |
 | Power                 | 6% radius | 1.5 | 15% radius |
 
@@ -192,9 +193,22 @@ Speeds are in % of screen per second. "Lure cost" is the price of the first lure
 | deer    | 22    | 6      | 15     | bleat    | 10 s                | 300 |
 | moose   | 10    | 16     | 40     | bellow   | 10 s                | 750 |
 | bear    | 6     | 30     | 80     | roar     | 10 s                | 1,500 |
-| ferret  | 30    | 8      | 150    | dook     | 10 s                | 3,000 |
+| ferret  | 40    | 35     | 150    | dook     | 10 s                | 3,000 |
+| goose   | 16    | 50     | 300    | honk!    | 10 s                | 6,000 |
+| crab    | 9     | 60     | 500    | snip snip | 10 s               | 12,000 |
+| mole    | 12    | 120    | 900    | snuffle  | 10 s                | 20,000 |
+
+The goose **honks a lot**: every 1–2 seconds while wandering, instead of the usual 5–12. Each animal type can set its own noise interval in the config.
 
 The moose is drawn in larger text than the other animals, because it's a big animal.
+
+**Moles** are the toughest animal (120 health) and don't walk in from an edge:
+- Each mole **digs up out of the ground** at a random spot well inside the battlefield, keeping clear of plants and units where it can. Digging out takes about 0.8 s: the `mole` word pushes up out of the ground, growing from small to full size and jiggling as it comes, while a few small brown `dirt` words are thrown up and fall back down, with a low rumble and a slight screen shake.
+- It leaves a brown **`HOLE`** word on the ground where it came up. Holes are decoration only (drawn under plants and animals, can't be hit) and fade away after about 6 seconds.
+- Once out, it **scurries about for 5–7 seconds**, wandering like any other animal (sudden turns included, bouncing off the edges).
+- Then it **digs back down** where it stands (about 0.7 s, shrinking and sinking into a new `HOLE`, with more dirt) and is **gone, with no points**. It counts as an animal that got away.
+- While digging (up or down) the mole is **underground**: bullets pass over it, blasts don't hurt it, and AI units ignore it. An AI unit whose target goes underground picks a new one.
+- Moles have a lure like other animals and count against the animal cap while on screen.
 
 ### 6.5 Trees and Bushes
 - **The game starts with 10 fully grown trees and bushes** already on the battlefield (also after Reset Progress, and after reloading a save).
@@ -226,6 +240,7 @@ The moose is drawn in larger text than the other animals, because it's a big ani
   - A spider has **5 health**, is **fast** (32% of screen per second, the fastest creature), is purple, and is worth **no points** when killed (no "+0" is shown, and it doesn't add to Nature Destroyed).
   - It runs straight at the **nearest unit** (the player's MAN1 or any AI unit, including the TANK), with no wandering.
   - When it gets close enough, that unit is **covered in COBWEBS**: the word `COBWEBS` is drawn across it at a slant (fading out at the end), with a floating "webbed!". For **15 seconds**, the unit's **speed and shooting speed are cut by 70%**. Getting webbed again restarts the 15 seconds.
+  - Every webbing also brings a popup from **Knockoff Spidey** (see 8), telling the player which unit has been webbed.
   - Once it has webbed a unit, the spider **runs off the nearest edge** and is removed from the game. It can still be shot on the way out.
   - Spiders have no lures and don't count against the animal cap.
 - AI units never target plants; they only hunt animals.
@@ -254,25 +269,53 @@ The moose is drawn in larger text than the other animals, because it's a big ani
   - Units are picked from the shop list, not by clicking them on the battlefield, because clicking the battlefield shoots.
   - The unit picked in the shop is highlighted on the battlefield with a white glow, keeping its normal colour, so the player can see which one they are upgrading.
 - The shop is a **permanent panel on the right** of the window. It is always visible and can't be closed. The battlefield sits beside it, never behind it. The mouse is used for shooting, so clicking in the shop must **not** also fire a bullet.
-- **Controls hint:** a short line on screen reminds the player: WASD to move, click to shoot.
+- **Controls hint:** a short line on screen reminds the player: WASD to move, click to shoot, M to mute.
 - Text-only style throughout, to match the battlefield. The one exception is the advisers' pixel-art portraits (below).
 - **Adviser popups:** toast-style popups appear in the **bottom-left** of the battlefield. Each shows a small pixel-art portrait of an adviser, their name and job title, and an inane remark.
   - The advisers are an original cast of bureaucrats (Finance, Public Relations, Outdoor Activities, Environment, Health & Safety), in the spirit of classic city-builder advisers.
   - A random adviser pipes up every 18–40 seconds or so. Some remarks mention the current points or Nature Destroyed.
-  - Advisers also comment when the player unlocks a new animal's lure or buys a new unit.
+  - Advisers also comment when the player unlocks a new animal's lure or buys a new unit. An event remark avoids lines used recently.
+  - **Knockoff Spidey** (Web Safety Officer) is an obviously knockoff masked hero in red and blue, with a pixel-art portrait: a red mask with dark red web lines and big white eye lenses, over blue shoulders. He **never pipes up at random**: he only appears, in the same popup style, whenever a unit is covered in COBWEBS, and tells the player that unit (e.g. `MAN1`) has been webbed.
   - New popups appear at the bottom and **stack upwards**, pushing older ones up. Up to 4 are shown at once; each disappears after about 9 seconds, or when clicked. Clicking a popup never fires a bullet.
   - Advisers, their looks and their lines live in `js/advisers.js`; timings are in the config.
-- **Side panel tabs:** the right-hand panel has two tabs, **SHOP** and **ACHIEVEMENTS**. SHOP is shown by default. Reset Progress stays at the bottom under both tabs.
+- **Side panel tabs:** the right-hand panel has three tabs, **SHOP**, **ACHIEVEMENTS** and **STATS**. SHOP is shown by default. The sound and shake toggles and Reset Progress stay at the bottom under every tab.
+- **Statistics (STATS tab):** a read-only list of numbers, updated about twice a second while the tab is open:
+  - **Overview:** time played, Amount of Nature Destroyed, points spent, animals killed, animals that got away (possums and spiders that left, moles that dug back down), and the most animals killed by one blast.
+  - **Shooting:** the player's own shots, how many of them hurt at least one animal, the player's accuracy (that as a percentage), shots fired by AI units, and times a unit was webbed.
+  - **Kills by animal:** every animal type (including possums, spiders and moles), coloured with the animal's colour once it has been killed at least once.
+  - **Kills by unit:** each unit the player owns (`MAN1 (you)`, `MAN2`, `TANK1`, …) and how many animals its shots killed.
+  - **Plants:** TREEs and BUSHes broken.
+  - Time played only counts while the game is open and running, the same as points (see 9).
 - **Achievements:**
-  - Earned achievements pop up in the bottom-left **the same way as adviser remarks**, stacking with them, but with a pixel-art trophy instead of a face, an "ACHIEVEMENT UNLOCKED" heading and a gold accent.
+  - Earned achievements pop up in the bottom-left **the same way as adviser remarks**, stacking with them, but with a pixel-art trophy (silver or gold) instead of a face, an "ACHIEVEMENT UNLOCKED" heading and a gold accent.
   - The ACHIEVEMENTS tab lists **only the achievements earned so far**, newest first, each with its trophy, title, description and the date it was earned, plus a count ("5 of 14 unlocked").
-  - Each achievement is earned once and kept. Achievements, kill counts and the player's shot count are saved; Reset Progress wipes them.
+  - Each achievement is earned once and kept. Achievements, kill counts, plants broken and the player's shot count are saved; Reset Progress wipes them.
   - The achievements:
-    - **First kill of each animal type** (including possums and spiders): "Hello rabbit, Goodbye rabbit", etc.
+    - **First kill of each animal type** (including possums and spiders): "Hello rabbit, Goodbye rabbit", etc. These get a **silver** trophy; all other achievements get a **gold** one.
     - **15 kills of each animal type**: "Rabbit Exterminator", etc. Any unit's kill counts.
     - **Have 3 MANs** (MAN1 plus two hired MANs): "Three's a Crowd".
     - **The player personally fires 100 bullets** (shots by AI units don't count): "Trigger Happy".
+    - **Break 50 TREEs**: "Lumberjack". **Break 50 BUSHes**: "Bush Whacker". Plants broken by any unit count.
+    - **Get covered in COBWEBS 10 times** (any unit counts): "Sticky Situation".
   - Per-animal achievements are generated from the animal config, so a new animal type gets them automatically.
+
+## 8a. Sound and Feedback
+
+- **Sound effects** are made by the game itself (Web Audio), with no sound files. Browsers only allow sound after the player has clicked or pressed a key, so sound starts with the first input.
+  - Battlefield sounds: the player's shot, AI shots (quieter), the TANK and ARTILLERY firing SHELLs (a deep thump), explosions (louder and deeper for bigger blasts), kills (a short blip, lower for bigger animals), TREEs cracking and BUSHes snapping, a mole digging, and a unit getting webbed. These are panned left or right to match where they happen on the battlefield.
+  - Interface sounds: buying an upgrade, unlocking a lure or buying a unit, an adviser remark, and an achievement fanfare.
+  - The same sound can't restart within a few hundredths of a second, and only so many sounds play at once, so a crowd of AI units doesn't turn into a roar.
+- **Screen shake:** the battlefield shakes a little when the player's own shots explode, more when a SHELL explodes, and slightly when a mole digs. The shake settles quickly. AI bullets don't shake the screen. The aim circle doesn't shake.
+- **Hit flashes:** an animal or plant flashes white for a moment when a blast hurts it.
+- **Turning them off:** two buttons at the bottom of the side panel, **Sound: on/off** and **Shake & flash: on/off**, switch each one separately. **M** also turns sound on and off.
+  - Both start on, except shake & flash starts off when the player's system asks for reduced motion.
+- **Master volume:** a **Volume** slider under those buttons sets the volume from 0% to 100% in steps of 5, showing the current percentage, and starting at 70%.
+  - The slider is shaped to sound even to the ear (loudness grows with the square of the slider). 70% is roughly three times as loud as the game's original fixed level, and 100% roughly six times. A compressor keeps loud moments (lots of explosions at once) from distorting.
+  - Volume changes straight away, with a short glide so dragging doesn't click, and a blip plays when the slider is let go so the player can hear the new level.
+  - Moving the slider above 0% while sound is off turns sound back on. The slider dims while sound is off.
+  - The volume is saved along with the other two settings.
+  - The choices are saved in the browser separately from the game, so Reset Progress doesn't change them.
+- Tuning values (volume, shake strengths, flash length) live in the config file.
 
 ## 9. Saving Progress
 
@@ -281,8 +324,10 @@ The moose is drawn in larger text than the other animals, because it's a big ani
   - Points and the "Amount of Nature Destroyed" score.
   - Every unit the player owns: its label (`MAN1`, `MAN2`, …), type, and level in each attribute.
   - Every lure the player owns and how many of each.
-  - Achievements earned (and when), kills per animal type, and how many bullets the player has fired personally.
-- **What is not saved:** where things are on the battlefield in the moment (animals on screen, bullets in flight, unit positions). On loading, units start back at the bottom middle, the battlefield starts with no animals and a fresh set of 10 fully grown plants, then animals spawn as normal.
+  - Achievements earned (and when), kills per animal type, TREEs and BUSHes broken, and how many bullets the player has fired personally.
+  - The other statistics on the STATS tab (time played, points spent, shots and hits, kills by unit, and so on). Older saves without them start from zero. Reset Progress wipes them.
+  - The sound and shake & flash settings are saved too, but separately (see 8a).
+- **What is not saved:** where things are on the battlefield in the moment (animals on screen, bullets in flight, unit positions, mole HOLEs). On loading, units start back at the bottom middle, the battlefield starts with no animals and a fresh set of 10 fully grown plants, then animals spawn as normal.
 - **When it saves:** automatically every few seconds (e.g. every 5 s), straight after every purchase, and when the page is closed.
 - The save includes a version number, so a later update to the game can still load older saves.
 - **No offline progress.** Points are only earned while the game is open and running in the browser. Nothing is earned while the game is closed, and loading a save never adds points for the time away.

@@ -51,6 +51,13 @@ const CONFIG = {
     abruptTurnAngle: [60, 180], // degrees, left or right at random
   },
 
+  // How often animals make their noise while wandering (seconds, random in the
+  // range). An animal's own noiseEvery replaces 'every'.
+  animalNoise: {
+    firstIn: [3, 9],  // after appearing
+    every: [5, 12],   // after that
+  },
+
   // Adviser popups in the bottom-left (the advisers and their lines are in advisers.js).
   toasts: {
     firstDelay: 6,       // seconds before the first remark
@@ -62,9 +69,29 @@ const CONFIG = {
   // Achievements are listed in achievements.js.
   achievements: {
     manyKills: 15,       // kills of one animal type for its "Exterminator" achievement
+    manyPlants: 50,      // trees (or bushes) broken for the plant achievements
+    manyWebbed: 10,      // times any unit is covered in COBWEBS for "Sticky Situation"
   },
 
   maxFrameSeconds: 0.1,   // stops background tabs "catching up" on return
+
+  // Sound effects and screen feedback (feedback.js). The player can switch
+  // sound and shake/flash off separately; those choices are saved under their
+  // own key, so Reset Progress doesn't touch them.
+  feedback: {
+    settingsKey: 'won-settings',
+    // Master volume. The player's slider goes 0..1 and starts at `default`.
+    // It sets a loudness of maxGain * slider², so the slider feels even to the
+    // ear (0.7 gives about 1, 1 gives maxGain). A compressor keeps busy moments
+    // from distorting when it's turned right up.
+    volume: { default: 0.7, maxGain: 2 },
+    maxVoices: 24,         // sounds playing at once; more are skipped
+    minGap: 0.035,         // seconds: the same sound won't start again sooner than this
+    hitFlashSeconds: 0.12, // animals and plants flash white this long when hit
+    // Screen shake, in % of screen. Only the player's own shots and SHELLs
+    // shake the screen (AI bullets would make it shake all the time).
+    shake: { bullet: 0.15, shell: 0.5, dig: 0.2, max: 1, decay: 9 }, // decay: how fast it settles (per second)
+  },
 
   // Player unit types. Attribute order here is the order shown in the shop.
   //   value at level L = base + perLevel * L
@@ -81,6 +108,7 @@ const CONFIG = {
   //   barrel          tank only: the turret word drawn on top, aimed independently
   //   immobile        tank only: never moves or turns its body (only the barrel turns);
   //                   needs no speed attribute
+  //   minRange        tank only: % of screen; never targets or fires at anything closer
   //   startAt         'center' to appear in the middle of the battlefield
   //                   (default: bottom middle)
   unitTypes: {
@@ -114,15 +142,15 @@ const CONFIG = {
       attributes: {
         speed:    { label: 'Speed',          base: 5,    perLevel: 0.75, maxLevel: 6, cost: 40, costGrowth: 1.6, decimals: 1, suffix: '%/s' },
         fireRate: { label: 'Shooting speed', base: 0.35, perLevel: 0.08, maxLevel: 6, cost: 60, costGrowth: 1.6, decimals: 2, suffix: '/s' },
-        range:    { label: 'Range',          base: 45,   perLevel: 3,    maxLevel: 6, cost: 50, costGrowth: 1.6, decimals: 1, suffix: '%' },
+        range:    { label: 'Range',          base: 38,   perLevel: 10 / 6, maxLevel: 6, cost: 50, costGrowth: 1.6, decimals: 1, suffix: '%' }, // always 2% short of the ARTILLERY
         damage:   { label: 'Damage',         base: 6,    perLevel: 3,    maxLevel: 6, cost: 70, costGrowth: 1.6, decimals: 0, suffix: '' },
         power:    { label: 'Power',          base: 6,    perLevel: 1.5,  maxLevel: 6, cost: 80, costGrowth: 1.6, decimals: 1, suffix: '% radius' },
       },
     },
     // Like the TANK, but it can't move: it sits in the middle of the battlefield
-    // and only turns its barrel. Longer range makes up for staying put.
+    // and only turns its barrel.
     ARTILLERY: {
-      description: 'stationary, long range',
+      description: 'stationary',
       startingCount: 0,
       maxCount: 1,          // only ever one ARTILLERY
       cost: 900,
@@ -134,10 +162,11 @@ const CONFIG = {
       ai: 'tank',
       immobile: true,
       startAt: 'center',
+      minRange: 20,         // % of screen: won't target or fire at anything closer than this
       barrel: { word: 'BARREL', textSize: 1.92, turnRate: 140 }, // turnRate in deg/s
       attributes: {
         fireRate: { label: 'Shooting speed', base: 0.35, perLevel: 0.08, maxLevel: 6, cost: 90,  costGrowth: 1.6, decimals: 2, suffix: '/s' },
-        range:    { label: 'Range',          base: 55,   perLevel: 4,    maxLevel: 6, cost: 75,  costGrowth: 1.6, decimals: 1, suffix: '%' },
+        range:    { label: 'Range',          base: 40,   perLevel: 10 / 6, maxLevel: 6, cost: 75,  costGrowth: 1.6, decimals: 1, suffix: '%' },
         damage:   { label: 'Damage',         base: 6,    perLevel: 3,    maxLevel: 6, cost: 100, costGrowth: 1.6, decimals: 0, suffix: '' },
         power:    { label: 'Power',          base: 6,    perLevel: 1.5,  maxLevel: 6, cost: 120, costGrowth: 1.6, decimals: 1, suffix: '% radius' },
       },
@@ -150,12 +179,41 @@ const CONFIG = {
     // textSize (optional) overrides text.animalSize for that animal.
     // color (optional, [r, g, b]) overrides colors.animal for that animal.
     // plural (optional) for achievement text, default name + 's'.
+    // noiseEvery (optional, [min, max] seconds) how often it makes its noise while wandering, default animalNoise.every.
     rabbit: { speed: 14, health: 1,  points: 1,  noise: 'squeak', lureCost: 5,    lureCostGrowth: 1.4, startingLures: 1, spawnSeconds: 5, textSize: 1.5 },
     pig:    { speed: 7,  health: 4,  points: 6,  noise: 'oink',   lureCost: 60,   lureCostGrowth: 1.4, startingLures: 0, color: [255, 150, 190] },
     deer:   { plural: 'deer', speed: 22, health: 6,  points: 15, noise: 'bleat',  lureCost: 300,  lureCostGrowth: 1.4, startingLures: 0, color: [184, 132, 80] },
     moose:  { plural: 'moose', speed: 10, health: 16, points: 40, noise: 'bellow', lureCost: 750,  lureCostGrowth: 1.4, startingLures: 0, color: [168, 150, 120], textSize: 2.6 },
     bear:   { speed: 6,  health: 30, points: 80, noise: 'roar',   lureCost: 1500, lureCostGrowth: 1.4, startingLures: 0, color: [240, 240, 240] },
-    ferret: { speed: 30, health: 8,  points: 150, noise: 'dook', lureCost: 3000, lureCostGrowth: 1.4, startingLures: 0, color: [232, 196, 110] },
+    ferret: { speed: 40, health: 35, points: 150, noise: 'dook', lureCost: 3000, lureCostGrowth: 1.4, startingLures: 0, color: [232, 196, 110] },
+    goose:  { plural: 'geese', speed: 16, health: 50, points: 300, noise: 'honk!', noiseEvery: [1, 2], lureCost: 6000, lureCostGrowth: 1.4, startingLures: 0, color: [190, 205, 215] },
+    crab:   { speed: 9,  health: 60, points: 500, noise: 'snip snip', lureCost: 12000, lureCostGrowth: 1.4, startingLures: 0, color: [255, 30, 30] },
+    // Moles don't walk in from an edge. Each one digs up out of the ground
+    // somewhere on the battlefield, scurries about for a few seconds, then digs
+    // back down and is gone (no points if it gets away). While it's digging
+    // it's underground: it can't be hit, and AI units ignore it.
+    //   burrow.emergeSeconds   how long it takes to dig out
+    //   burrow.surfaceSeconds  how long it stays up (random in the range)
+    //   burrow.burrowSeconds   how long it takes to dig back down
+    mole:   { behaviour: 'burrower', speed: 12, health: 120, points: 900, noise: 'snuffle', lureCost: 20000, lureCostGrowth: 1.4, startingLures: 0, color: [205, 150, 120],
+              burrow: { emergeSeconds: 0.8, surfaceSeconds: [5, 7], burrowSeconds: 0.7 } },
+  },
+
+  // The HOLE a mole leaves where it digs up or down, and the dirt it throws.
+  // Sizes are % of screen; dirt speeds and gravity are % of screen per second.
+  digging: {
+    holeWord: 'HOLE',
+    holeSize: 2.2,
+    holeColor: [110, 80, 54],
+    holeSeconds: 6,        // how long a HOLE stays (fading out over the last fadeSeconds)
+    holeFadeSeconds: 1.5,
+    dirtWord: 'dirt',
+    dirtSize: 1.1,
+    dirtColor: [150, 112, 76],
+    dirtCount: [5, 8],     // bits of dirt thrown up each time
+    dirtSpeed: [14, 30],
+    dirtGravity: 90,
+    dirtSeconds: 0.6,
   },
 
   // Animals that live in trees. They have no lures: they can jump out when a

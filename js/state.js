@@ -18,14 +18,33 @@ function newState() {
   for (const [name, def] of Object.entries(CONFIG.animals)) lures[name] = def.startingLures || 0;
   const kills = {};
   for (const name of Object.keys({ ...CONFIG.animals, ...CONFIG.treeAnimals })) kills[name] = 0;
+  const plantsBroken = {};
+  for (const type of Object.keys(CONFIG.plants.types)) plantsBroken[type] = 0;
   return {
     points: 0,
     destroyed: 0,
     units,
     lures,
     kills,            // per animal type, for achievements
+    plantsBroken,     // per plant type (TREE, BUSH), for achievements
     playerShots: 0,   // bullets fired by the player personally (not AI units)
     achievements: {}, // id -> time unlocked (ms)
+    stats: newStats(),
+  };
+}
+
+// Extra counters for the STATS tab (kills, plants and the player's shots above
+// are shared with the achievements).
+function newStats() {
+  return {
+    timePlayed: 0,     // seconds the game has been running
+    pointsSpent: 0,
+    aiShots: 0,        // bullets and SHELLs fired by AI units
+    playerHits: 0,     // player shots whose blast hurt at least one animal
+    bestMultiKill: 0,  // most animals killed by one blast
+    escaped: 0,        // animals that left alive (possums, spiders, moles)
+    webbed: 0,         // times a unit was covered in COBWEBS
+    killsByUnit: {},   // unit label (MAN1, TANK1...) -> kills
   };
 }
 
@@ -104,6 +123,7 @@ function lureCost(name) {
 function spend(cost) {
   if (cost === null || state.points < cost) return false;
   state.points -= cost;
+  state.stats.pointsSpent += cost;
   return true;
 }
 
@@ -206,11 +226,30 @@ function loadGame() {
       if (isNonNegInt(data.kills[name])) s.kills[name] = data.kills[name];
     }
   }
+  if (data.plantsBroken && typeof data.plantsBroken === 'object') {
+    for (const type of Object.keys(s.plantsBroken)) {
+      if (isNonNegInt(data.plantsBroken[type])) s.plantsBroken[type] = data.plantsBroken[type];
+    }
+  }
   if (isNonNegInt(data.playerShots)) s.playerShots = data.playerShots;
   if (data.achievements && typeof data.achievements === 'object') {
     const known = new Set(ACHIEVEMENTS.map(a => a.id));
     for (const [id, when] of Object.entries(data.achievements)) {
       if (known.has(id) && Number.isFinite(when) && when > 0) s.achievements[id] = when;
+    }
+  }
+
+  // Statistics (older saves won't have these either).
+  const st = data.stats;
+  if (st && typeof st === 'object') {
+    for (const key of ['pointsSpent', 'aiShots', 'playerHits', 'bestMultiKill', 'escaped', 'webbed']) {
+      if (isNonNegInt(st[key])) s.stats[key] = st[key];
+    }
+    if (Number.isFinite(st.timePlayed) && st.timePlayed >= 0) s.stats.timePlayed = st.timePlayed;
+    if (st.killsByUnit && typeof st.killsByUnit === 'object') {
+      for (const [label, n] of Object.entries(st.killsByUnit)) {
+        if (/^[A-Z]+\d+$/.test(label) && isNonNegInt(n)) s.stats.killsByUnit[label] = n;
+      }
     }
   }
   return s;

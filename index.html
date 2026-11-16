@@ -13,19 +13,23 @@
     <div class="hud-title">WON <span>War On Nature</span></div>
     <div class="hud-row">Amount of Nature Destroyed: <b id="destroyed">0</b></div>
     <div class="hud-row">Points: <b id="points">0</b></div>
-    <div class="hud-hint">WASD move &middot; click to shoot</div>
+    <div class="hud-hint">WASD move &middot; click to shoot &middot; M mute</div>
   </div>
 
   <div id="toasts" aria-live="polite"></div>
 
   <aside id="shop" aria-label="Shop">
     <header class="panel-tabs" role="tablist">
-      <button type="button" class="panel-tab active" data-tab="shop" role="tab">SHOP</button>
-      <button type="button" class="panel-tab" data-tab="achievements" role="tab">ACHIEVEMENTS</button>
+      <button type="button" class="panel-tab active" data-tab="shop" role="tab" aria-selected="true">SHOP</button>
+      <button type="button" class="panel-tab" data-tab="achievements" role="tab" aria-selected="false">ACHIEVEMENTS</button>
+      <button type="button" class="panel-tab" data-tab="stats" role="tab" aria-selected="false">STATS</button>
     </header>
     <div class="shop-body tab-panel" data-panel="achievements" hidden>
       <div id="achievement-count" class="unit-sub"></div>
       <div id="achievement-list"></div>
+    </div>
+    <div class="shop-body tab-panel" data-panel="stats" hidden>
+      <div id="stats"></div>
     </div>
     <div class="shop-body tab-panel" data-panel="shop">
       <section>
@@ -40,19 +44,35 @@
       </section>
     </div>
     <footer class="shop-footer">
+      <div class="settings">
+        <button id="toggle-sound" type="button" aria-pressed="true">Sound: on</button>
+        <button id="toggle-effects" type="button" aria-pressed="true">Shake &amp; flash: on</button>
+      </div>
+      <label class="volume" for="volume">
+        <span>Volume</span>
+        <input id="volume" type="range" min="0" max="100" step="5" value="70">
+        <b id="volume-value">70%</b>
+      </label>
       <button id="reset" type="button" class="danger">Reset Progress</button>
+      <!-- DEBUG: for balancing only. Remove before release (see also onDebugPoints in ui.js). -->
+      <button id="debug-points" type="button">+100 pts</button>
     </footer>
   </aside>
 
   <script src="js/config.js"></script>
   <script src="js/util.js"></script>
+  <script src="js/feedback.js"></script>
   <script src="js/state.js"></script>
   <script src="js/world.js"></script>
+  <script src="js/units.js"></script>
+  <script src="js/plants.js"></script>
+  <script src="js/animals.js"></script>
   <script src="js/render.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/advisers.js"></script>
   <script src="js/toasts.js"></script>
   <script src="js/achievements.js"></script>
+  <script src="js/stats.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

@@ -1,8 +1,8 @@
 // Achievements: unlocked once, saved, announced with a popup, and listed in
 // the shop panel's ACHIEVEMENTS tab.
 //
-// Each achievement has an id, a title, a description, and a test() that
-// returns true once it has been earned. The per-animal ones are built from
+// Each achievement has an id, a title, a description, a tier ('gold' or
+// 'silver', default gold) and a test() that returns true once it has been earned. The per-animal ones are built from
 // the animal config, so new animals get achievements automatically.
 
 // Every animal that can be killed (lure animals and tree animals).
@@ -27,6 +27,7 @@ function buildAchievements() {
       id: `first-${name}`,
       title: `Hello ${name}, Goodbye ${name}`,
       text: `Kill your first ${name}.`,
+      tier: 'silver',
       test: () => (state.kills[name] || 0) >= 1,
     });
   }
@@ -49,6 +50,26 @@ function buildAchievements() {
     title: 'Trigger Happy',
     text: 'Personally fire 100 bullets.',
     test: () => state.playerShots >= 100,
+  });
+  const plantsFor = CONFIG.achievements.manyPlants;
+  list.push({
+    id: `break${plantsFor}-TREE`,
+    title: 'Lumberjack',
+    text: `Break ${plantsFor} TREEs.`,
+    test: () => state.plantsBroken.TREE >= plantsFor,
+  });
+  list.push({
+    id: `break${plantsFor}-BUSH`,
+    title: 'Bush Whacker',
+    text: `Break ${plantsFor} BUSHes.`,
+    test: () => state.plantsBroken.BUSH >= plantsFor,
+  });
+  const webbedFor = CONFIG.achievements.manyWebbed;
+  list.push({
+    id: `webbed${webbedFor}`,
+    title: 'Sticky Situation',
+    text: `Get covered in COBWEBS ${webbedFor} times. Impressively bad.`,
+    test: () => state.stats.webbed >= webbedFor,
   });
   return list;
 }
@@ -75,6 +96,11 @@ function recordKill(name) {
   checkAchievements();
 }
 
+function recordPlantBroken(type) {
+  state.plantsBroken[type] = (state.plantsBroken[type] || 0) + 1;
+  checkAchievements();
+}
+
 // Only shots the player fires themselves (MAN1), not AI units.
 function recordPlayerShot() {
   state.playerShots++;
@@ -92,8 +118,8 @@ function renderAchievements() {
 
   countEl.textContent = `${got.length} of ${ACHIEVEMENTS.length} unlocked`;
   el.innerHTML = got.length
-    ? got.map(a => `<div class="achievement">
-        ${trophySVG()}
+    ? got.map(a => `<div class="achievement ${a.tier || 'gold'}">
+        ${trophySVG(a.tier)}
         <div>
           <div class="achievement-title">${a.title}</div>
           <div class="achievement-text">${a.text}</div>
@@ -103,11 +129,15 @@ function renderAchievements() {
     : '<div class="achievement-empty">Nothing yet. Nature remains suspiciously intact.</div>';
 }
 
+// The trophy colours for each tier.
+const TROPHY_COLOURS = {
+  gold:   { metal: '#ffd23a', shade: '#c8961e', shine: '#fff3a8' },
+  silver: { metal: '#d4dae0', shade: '#8e98a3', shine: '#ffffff' },
+};
+
 // 16x16 pixel-art trophy, same style as the adviser portraits.
-function trophySVG() {
-  const gold = '#ffd23a';
-  const shade = '#c8961e';
-  const shine = '#fff3a8';
+function trophySVG(tier = 'gold') {
+  const { metal: gold, shade, shine } = TROPHY_COLOURS[tier] || TROPHY_COLOURS.gold;
   const rects = [
     ['#24301f', 0, 0, 16, 16],
     [shade, 2, 3, 2, 1], [shade, 2, 4, 1, 2], [shade, 3, 6, 1, 1],     // left handle

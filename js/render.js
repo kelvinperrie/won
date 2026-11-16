@@ -53,13 +53,32 @@ function drawLabel(ctx, text, x, y, px, color, alpha, italic) {
   ctx.restore();
 }
 
+const WHITE = [255, 255, 255];
+
+// Shifts toward red as the animal gets hurt, and flashes white just after a hit.
 function animalColor(a) {
   const t = 1 - clamp(a.hp / a.def.health, 0, 1);
-  return mixColor(a.def.color || CONFIG.colors.animal, CONFIG.colors.animalHurt, t);
+  const base = mixRGB(a.def.color || CONFIG.colors.animal, CONFIG.colors.animalHurt, t);
+  return mixColor(base, WHITE, flashOf(a) * 0.85);
 }
 
-function mixColor(c0, c1, t) {
-  return `rgb(${Math.round(lerp(c0[0], c1[0], t))},${Math.round(lerp(c0[1], c1[1], t))},${Math.round(lerp(c0[2], c1[2], t))})`;
+// How a mole looks while it's digging: it pushes up out of its HOLE (or sinks
+// back into one), growing (or shrinking) and jiggling as it goes. null when
+// it's up and about (or for any other animal).
+function burrowLook(a) {
+  if (!a.phase || a.phase === 'up') return null;
+  const b = a.def.burrow;
+  const k = a.phase === 'emerging'
+    ? clamp(a.phaseT / b.emergeSeconds, 0, 1)
+    : 1 - clamp(a.phaseT / b.burrowSeconds, 0, 1);
+  const e = k * k * (3 - 2 * k); // ease in and out
+  const jiggle = pct(0.25) * (1 - e);
+  return {
+    scale: lerp(0.25, 1, e),
+    dx: rand(-jiggle, jiggle),
+    dy: (1 - e) * pct(1.2) + rand(-jiggle, jiggle), // starts down in the hole
+    alpha: lerp(0.3, 1, e),
+  };
 }
 
 // How damaged a plant is, 0 (fine) to 1 (about to break).
@@ -75,7 +94,8 @@ function drawPlant(ctx, p) {
   const sp = { spacing: CONFIG.plants.letterSpacing };
   const s = p.px;
 
-  drawWord(ctx, p.type, p.x, p.y, p.angle, s, mixColor(p.def.color, p.def.damagedColor, t), sp);
+  const main = mixRGB(p.def.color, p.def.damagedColor, t);
+  drawWord(ctx, p.type, p.x, p.y, p.angle, s, mixColor(main, WHITE, flashOf(p) * 0.6), sp);
 
   const branchColor = mixColor(dc.branchColor, p.def.damagedColor, t);
   for (const b of p.decor.branches) {
@@ -95,6 +115,10 @@ function renderWorld(ctx, highlightRec) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
+  // Screen shake moves everything on the battlefield (but not the aim circle).
+  ctx.save();
+  ctx.translate(feedback.shakeX, feedback.shakeY);
+
   // Debris lies on the ground under everything.
   const dcfg = CONFIG.plants.debris;
   for (const d of world.debris) {
@@ -108,11 +132,31 @@ function renderWorld(ctx, highlightRec) {
     });
   }
 
+  // HOLEs that moles dug, also on the ground. They open quickly, then fade.
+  const dig = CONFIG.digging;
+  const holeColor = `rgb(${dig.holeColor.join(',')})`;
+  for (const h of world.holes) {
+    const open = Math.min(1, h.t / 0.25);
+    const fade = clamp((h.life - h.t) / dig.holeFadeSeconds, 0, 1);
+    drawWord(ctx, dig.holeWord, h.x, h.y + pct(0.8), Math.PI, fontPx(dig.holeSize) * lerp(0.4, 1, open), holeColor, {
+      spacing: CONFIG.text.animalLetterSpacing,
+      alpha: 0.9 * fade,
+    });
+  }
+
   // Plants next, so animals and units walk in front of them.
   for (const p of world.plants) drawPlant(ctx, p);
 
   for (const a of world.animals) {
-    drawWord(ctx, a.name, a.x, a.y, a.angle, a.px, animalColor(a), { spacing: CONFIG.text.animalLetterSpacing });
+    const look = burrowLook(a);
+    if (look) {
+      drawWord(ctx, a.name, a.x + look.dx, a.y + look.dy, a.angle, a.px * look.scale, animalColor(a), {
+        spacing: CONFIG.text.animalLetterSpacing,
+        alpha: look.alpha,
+      });
+    } else {
+      drawWord(ctx, a.name, a.x, a.y, a.angle, a.px, animalColor(a), { spacing: CONFIG.text.animalLetterSpacing });
+    }
   }
 
   for (const u of world.units) {
@@ -165,11 +209,17 @@ function renderWorld(ctx, highlightRec) {
       ctx.globalAlpha = 1 - p;
       ctx.fillText('BOOM', e.x, e.y);
       ctx.restore();
+    } else if (e.kind === 'dirt') {
+      // Bits of dirt thrown up by a digging mole, tumbling and falling back down.
+      const x = e.x + e.vx * e.t;
+      const y = e.y + e.vy * e.t + 0.5 * pct(dig.dirtGravity) * e.t * e.t;
+      drawWord(ctx, dig.dirtWord, x, y, e.spin * e.t, fontPx(dig.dirtSize), `rgb(${dig.dirtColor.join(',')})`, { alpha: 1 - p });
     } else {
       drawLabel(ctx, e.text, e.x, e.y - p * pct(4), floatPx, e.color, 1 - p * p, e.italic);
     }
   }
 
+  ctx.restore();
   drawAim(ctx);
 }
 

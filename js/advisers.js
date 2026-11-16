@@ -4,8 +4,28 @@
 //   look.hair: 'short' | 'bald' | 'bob' | 'flattop' | 'bun'
 //   lines:     things they say at random. {points} and {destroyed} are filled in.
 //   on:        things they say when something happens. {name} is filled in.
+//   eventOnly: never pipes up at random; only speaks for their `on` events
+//              (e.g. Knockoff Spidey, who only turns up when a unit is webbed).
+//   look.mask: a masked face (big eye lenses, no hair or mouth) instead of a normal one;
+//              look.skin is the mask colour and look.maskLines the web lines drawn on it.
 
 const ADVISERS = {
+  spidey: {
+    name: 'Knockoff Spidey',
+    title: 'Web Safety Officer',
+    eventOnly: true,
+    look: { skin: '#c8282e', hair: 'none', hairColor: '#c8282e', suit: '#2a4aa8', tie: '#c8282e', glasses: false, mask: true, maskLines: '#5a1014' },
+    lines: [],
+    on: {
+      webbed: [
+        '{name}, you\'ve been webbed! Moving and shooting at a crawl. Don\'t say I didn\'t warn you.',
+        'Webbed again, {name}? My spider sense says you\'re terrible at this.',
+        'THWIP! That\'s the sound of {name} getting webbed. Hold still, it builds character.',
+        'Citizen {name}! You are covered in COBWEBS. This is a teachable moment.',
+        'With great firepower comes great responsibility to look out for spiders, {name}.',
+      ],
+    },
+  },
   finance: {
     name: 'Gordon Pillsbury',
     title: 'Finance Adviser',
@@ -52,6 +72,7 @@ const ADVISERS = {
       'The bears respect me. I can feel it. Somewhere deep.',
       'Wind\'s coming from the north. Or it\'s just me breathing. Hard to say.',
       'A moose is basically a horse that made bad choices.',
+      'Never trust a mole. Anything that lives underground and wears velvet is up to something.',
     ],
     on: {
       unlockLure: ['{name}s, eh? I\'ve been waiting my whole life for this. Or since Tuesday.'],

@@ -2,8 +2,15 @@
 
 const ui = {
   selected: 0, // index into state.units of the unit being upgraded
+  tab: 'shop', // which side panel tab is showing: 'shop', 'achievements' or 'stats'
   els: {},
 };
+
+// The on/off buttons in the panel footer, and the setting each one flips.
+const SETTING_BUTTONS = [
+  { id: 'toggle-sound', key: 'sound', label: 'Sound' },
+  { id: 'toggle-effects', key: 'effects', label: 'Shake & flash' },
+];
 
 function initUI() {
   const $ = id => document.getElementById(id);
@@ -20,20 +27,66 @@ function initUI() {
 
   ui.els.shop.addEventListener('click', onShopClick);
   ui.els.reset.addEventListener('click', onReset);
+  // DEBUG: for balancing only. Remove before release (with the button in index.html).
+  const debugBtn = $('debug-points');
+  if (debugBtn) debugBtn.addEventListener('click', onDebugPoints);
   for (const tab of document.querySelectorAll('.panel-tab')) {
     tab.addEventListener('click', () => showTab(tab.dataset.tab));
   }
+  for (const b of SETTING_BUTTONS) {
+    const btn = $(b.id);
+    if (btn) btn.addEventListener('click', () => toggleSetting(b.key));
+  }
+  const vol = $('volume');
+  if (vol) {
+    vol.addEventListener('input', () => {
+      setSetting('volume', Number(vol.value) / 100);
+      // Moving the slider up while muted means "I want to hear it".
+      if (!feedback.settings.sound && Number(vol.value) > 0) setSetting('sound', true);
+      renderSettings();
+    });
+    // A blip when the slider is let go, to hear the new level.
+    vol.addEventListener('change', () => sfx('buy'));
+  }
   renderShop();
   renderAchievements();
+  renderSettings();
 }
 
-// Switches the right-hand panel between SHOP and ACHIEVEMENTS.
+// Switches the right-hand panel between SHOP, ACHIEVEMENTS and STATS.
 function showTab(name) {
+  ui.tab = name;
   for (const tab of document.querySelectorAll('.panel-tab')) {
     tab.classList.toggle('active', tab.dataset.tab === name);
+    tab.setAttribute('aria-selected', tab.dataset.tab === name);
   }
   for (const panel of document.querySelectorAll('.tab-panel')) {
     panel.hidden = panel.dataset.panel !== name;
+  }
+  if (name === 'stats') renderStats();
+}
+
+// Flips sound or shake & flash on or off (also the M key, for sound).
+function toggleSetting(key) {
+  setSetting(key, !feedback.settings[key]);
+  renderSettings();
+}
+
+function renderSettings() {
+  for (const b of SETTING_BUTTONS) {
+    const btn = document.getElementById(b.id);
+    if (!btn) continue;
+    const on = feedback.settings[b.key];
+    btn.textContent = `${b.label}: ${on ? 'on' : 'off'}`;
+    btn.setAttribute('aria-pressed', on);
+    btn.classList.toggle('off', !on);
+  }
+  const vol = document.getElementById('volume');
+  if (vol) {
+    const pctVol = Math.round(feedback.settings.volume * 100);
+    if (document.activeElement !== vol) vol.value = pctVol; // don't fight a drag in progress
+    document.getElementById('volume-value').textContent = pctVol + '%';
+    vol.closest('.volume').classList.toggle('off', !feedback.settings.sound);
   }
 }
 
@@ -51,10 +104,11 @@ function onShopClick(e) {
   if (d.action === 'select') {
     ui.selected = Number(d.index);
   } else if (d.action === 'upgrade') {
-    if (rec) buyUpgrade(rec, d.key);
+    if (rec && buyUpgrade(rec, d.key)) sfx('buy');
   } else if (d.action === 'buy-unit') {
     const newRec = buyUnit(d.type);
     if (newRec) {
+      sfx('unlock');
       addUnitEntity(newRec);
       ui.selected = state.units.indexOf(newRec);
       toastEvent('buyUnit', unitLabel(newRec));
@@ -62,18 +116,29 @@ function onShopClick(e) {
     }
   } else if (d.action === 'buy-lure') {
     const wasLocked = !state.lures[d.name];
-    if (buyLure(d.name) && wasLocked) toastEvent('unlockLure', d.name);
+    if (buyLure(d.name)) {
+      sfx(wasLocked ? 'unlock' : 'buy');
+      if (wasLocked) toastEvent('unlockLure', d.name);
+    }
   }
   renderShop();
 }
 
 function onReset() {
-  if (!confirm('Reset all progress? Your units, upgrades, lures, score and achievements will be wiped.')) return;
+  if (!confirm('Reset all progress? Your units, upgrades, lures, score, achievements and stats will be wiped.')) return;
   resetGame();
   resetWorld();
   ui.selected = 0;
   renderShop();
   renderAchievements();
+  renderStats();
+}
+
+// DEBUG: for balancing only. Remove before release.
+// Gives spendable points without adding to "Amount of Nature Destroyed".
+function onDebugPoints() {
+  state.points += 100;
+  saveGame();
 }
 
 function costButton(label, cost, attrs) {

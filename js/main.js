@@ -16,7 +16,10 @@ function resizeCanvas() {
 }
 
 function setupInput() {
-  window.addEventListener('keydown', e => input.keys.add(e.code));
+  window.addEventListener('keydown', e => {
+    input.keys.add(e.code);
+    if (e.code === 'KeyM' && !e.repeat) toggleSetting('sound'); // M mutes / unmutes
+  });
   window.addEventListener('keyup', e => input.keys.delete(e.code));
 
   // Mouse position in battlefield coordinates.
@@ -65,10 +68,13 @@ function frame(now) {
   const dt = lastTime === null ? 0 : Math.min((now - lastTime) / 1000, CONFIG.maxFrameSeconds);
   lastTime = now;
 
+  recordTimePlayed(dt);
   updateWorld(dt);
+  updateFeedback(dt);
   renderWorld(ctx, highlightedUnit());
   updateHUD();
   updateToasts(dt);
+  updateStatsTab(dt);
 
   requestAnimationFrame(frame);
 }
@@ -79,6 +85,7 @@ function start() {
   window.addEventListener('resize', resizeCanvas);
   resetWorld();
   setupInput();
+  initFeedback();
   initUI();
   initToasts();
   checkAchievements(); // e.g. an older save that already has 3 MANs

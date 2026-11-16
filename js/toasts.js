@@ -29,9 +29,14 @@ function updateToasts(dt) {
   }
 }
 
+// Advisers who chip in at random (not the event-only ones like Knockoff Spidey).
+function randomAdviserIds() {
+  return Object.keys(ADVISERS).filter(id => !ADVISERS[id].eventOnly && ADVISERS[id].lines.length);
+}
+
 // A random remark from a random adviser.
 function randomToast() {
-  const ids = Object.keys(ADVISERS);
+  const ids = randomAdviserIds();
   const id = ids[Math.floor(Math.random() * ids.length)];
   const line = pickLine(ADVISERS[id].lines);
   showToast(id, line);
@@ -44,7 +49,12 @@ function toastEvent(kind, name) {
     for (const line of (adv.on && adv.on[kind]) || []) options.push([id, line]);
   }
   if (!options.length) return;
-  const [id, line] = options[Math.floor(Math.random() * options.length)];
+  // Prefer a line that hasn't been used lately.
+  const fresh = options.filter(([, l]) => !toasts.recent.includes(l));
+  const pool = fresh.length ? fresh : options;
+  const [id, line] = pool[Math.floor(Math.random() * pool.length)];
+  toasts.recent.push(line);
+  if (toasts.recent.length > 15) toasts.recent.shift();
   showToast(id, line.replaceAll('{name}', name));
   // Don't follow an event remark straight away with a random one.
   toasts.nextIn = Math.max(toasts.nextIn, CONFIG.toasts.every[0]);
@@ -65,10 +75,12 @@ function showToast(id, text) {
     .replaceAll('{destroyed}', formatNumber(state.destroyed));
 
   addToast(portraitSVG(adv.look), `${adv.name}, ${adv.title}`, text);
+  sfx('toast');
 }
 
 function showAchievementToast(a) {
-  addToast(trophySVG(), 'ACHIEVEMENT UNLOCKED', `${a.title}: ${a.text}`, 'achievement-toast');
+  sfx('achievement');
+  addToast(trophySVG(a.tier), 'ACHIEVEMENT UNLOCKED', `${a.title}: ${a.text}`, `achievement-toast ${a.tier || 'gold'}`);
 }
 
 // faceHTML is our own SVG; who and text are set as plain text.
@@ -118,6 +130,16 @@ function portraitSVG(look) {
     bun:     [[6, 0, 4, 2], [4, 2, 8, 2], [4, 4, 1, 2], [11, 4, 1, 2]],
   }[look.hair] || [];
   add(look.hairColor, hair);
+
+  if (look.mask) {
+    // A full-head mask: dark web lines and two big white eye lenses.
+    add(look.maskLines || dark, [[8, 3, 1, 7], [4, 6, 8, 1], [5, 4, 1, 1], [10, 4, 1, 1], [5, 8, 1, 1], [10, 8, 1, 1]]);
+    add(dark, [[4, 5, 3, 3], [9, 5, 3, 3]]);
+    add('#f4f4f4', [[5, 5, 2, 2], [9, 5, 2, 2]]);
+    const rects = px.map(([c, x, y, w, h]) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}"/>`).join('');
+    return `<svg class="toast-face" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">${rects}</svg>`;
+  }
+
   add(look.hairColor, [[5, 5, 2, 1], [9, 5, 2, 1]]); // eyebrows
 
   add(dark, [[6, 6, 1, 1], [9, 6, 1, 1]]);             // eyes

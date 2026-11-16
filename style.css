@@ -89,8 +89,8 @@ button.danger:hover { border-color: var(--danger); color: var(--danger); }
   border-bottom: 1px solid var(--line);
 }
 .panel-tab {
-  flex: 1;
-  padding: 10px 6px;
+  flex: 1 1 auto;   /* sized by content, so ACHIEVEMENTS fits beside SHOP and STATS */
+  padding: 10px 4px;
   border: none;
   border-bottom: 2px solid transparent;
   border-radius: 0;
@@ -113,6 +113,7 @@ button.danger:hover { border-color: var(--danger); color: var(--danger); }
 }
 .achievement .toast-face { width: 36px; height: 36px; }
 .achievement-title { color: var(--accent); font-size: 14px; }
+.achievement.silver .achievement-title { color: #d4dae0; }
 .achievement-text { font-size: 12px; margin-top: 2px; }
 .achievement-date { font-size: 11px; color: var(--muted); margin-top: 2px; }
 .achievement-empty { font-size: 13px; color: var(--muted); padding: 8px 0; }
@@ -127,7 +128,22 @@ button.danger:hover { border-color: var(--danger); color: var(--danger); }
   padding-bottom: 4px;
 }
 
-.shop-footer { padding: 10px 14px; border-top: 1px solid var(--line); }
+.shop-footer { padding: 10px 14px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Sound and shake & flash toggles, on their own row above Reset Progress */
+.settings { display: flex; gap: 8px; width: 100%; }
+.settings button { flex: 1; }
+.settings button.off { color: var(--muted); }
+.volume { display: flex; align-items: center; gap: 8px; width: 100%; font-size: 13px; }
+.volume input { flex: 1; min-width: 0; accent-color: var(--accent); cursor: pointer; }
+.volume b { color: var(--accent); min-width: 4ch; text-align: right; font-weight: normal; }
+.volume.off span, .volume.off b { color: var(--muted); }
+
+/* STATS tab */
+table.stats-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.stats-table td { padding: 4px 2px; border-bottom: 1px solid #1a2418; }
+table.stats-table td.val { color: var(--accent); text-align: right; white-space: nowrap; }
+table.stats-table tr.muted td { color: var(--muted); }
 
 /* Unit tabs */
 .unit-tabs { display: flex; flex-wrap: wrap; gap: 4px; max-height: 110px; overflow-y: auto; }
@@ -205,3 +221,5 @@ table.attrs td.buy button { min-width: 64px; }
 }
 .toast.achievement-toast { border-left-color: #ffd23a; background: rgba(40, 34, 10, 0.94); }
 .toast.achievement-toast .toast-who { letter-spacing: 2px; }
+.toast.achievement-toast.silver { border-left-color: #d4dae0; background: rgba(30, 34, 38, 0.94); }
+.toast.achievement-toast.silver .toast-who { color: #d4dae0; }
